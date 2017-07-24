@@ -1,0 +1,48 @@
+<form
+   role="form"
+   noValidate="true"
+   method="post"
+   enctype="multipart/form-data"
+   novalidate="novalidate"
+   i18n:domain="zeam.form.base"
+   metal:define-macro="editform"
+   tal:attributes="action request.URL">
+
+  <h1 tal:condition="view.label" tal:content="view.label" />
+  <p tal:condition="view.description" tal:content="view.description" />
+
+  <p class="alert-message block-message"
+     tal:condition="view.status"
+     tal:content="view.status">Status</p>
+
+  <div metal:define-macro="form-fieldset" tal:define="key view.jwk">
+
+    <div id="extrainfo" tal:replace="structure provider: uvcsite.extrainfo" />
+    <div>
+      <p tal:condition="not key">
+	Your keyring is empty. JWT generation is disabled
+      </p>
+      <tal:key condition="key">
+	<h2>Your keyring is already set</h2>
+	<p>
+	  You can regenerate the key by pressing the generation button.
+	  However, if you decide to do so, all existing valid tokens,
+	  using the current key will be rendered invalid.
+	</p>
+	<table class="table table-bordered table-vertical">
+	  <tr>
+	    <th>Key type</th>
+	    <td tal:content="key['kty']" />
+	  </tr>
+	  <tr>
+	    <th>Key value</th>
+	    <td tal:content="key['k']" />
+	  </tr>
+	</table>
+      </tal:key>
+    </div>
+    <div class="form-group" tal:condition="view.actionWidgets">
+	       <tal:widget tal:repeat="widget view.actionWidgets" tal:content="structure widget.render()" />
+    </div>
+ </div>
+</form>

@@ -1,0 +1,11 @@
+<configure
+   xmlns="http://namespaces.zope.org/zope"
+   i18n_domain="uvc.jwt"
+   package="uvc.jwt"
+   >
+
+  <includeOverrides package="uvcsite" file="ftesting.zcml"/>
+  <include package="uvc.jwt" />
+
+</configure>
+
