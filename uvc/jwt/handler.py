@@ -18,8 +18,8 @@ class JWTHandler(object):
         ticket.update(payload)
         return ticket
 
-    def verify_payload(self, payload):
-        return frozenset(payload.keys()) == frozenset(('exp', 'uid'))
+    def generate_key(self, ktype='oct', size=256):
+        return jwk.JWK.generate(kty=ktype, size=size)
 
     def create_signed_token(self, key, payload, alg="HS256"):
         """Return an unserialized signed token.
