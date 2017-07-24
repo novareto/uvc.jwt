@@ -22,6 +22,7 @@ setup(name='uvc.jwt',
       zip_safe=False,
       install_requires=[
           'setuptools',
+          'uvcsite',
           'jwcrypto >= 0.4.1',
           'grokcore.json',
           'zope.annotation',
