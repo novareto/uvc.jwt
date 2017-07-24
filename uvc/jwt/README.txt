@@ -16,6 +16,8 @@ Let's first create an instance of Uvcsite at the top level:
    >>> uvcsite = Uvcsite()
    >>> root['app'] = uvcsite
    >>> setSite(root['app'])
+   >>> from uvcsite.tests import startInteraction, endInteraction
+   >>> request = startInteraction('mgr')
 
    >>> from zope.component import getUtility
    >>> from zope.authentication.interfaces import IAuthentication
@@ -34,17 +36,37 @@ Let's first create an instance of Uvcsite at the top level:
 
    >>> from zope.component import getMultiAdapter
    >>> from zope.publisher.browser import TestRequest
-   >>> request = TestRequest()
    >>> jwt_view = getMultiAdapter((uvcsite, request), name='jwt.keyring')
    >>> jwt_view
+   <uvc.jwt.browser.keyring.PortalJWTKeyring object at 0...>
 
    >>> from uvc.jwt.browser.keyring import GenerateKeyAction, IKey
    >>> marker = GenerateKeyAction('gen')(jwt_view)
    >>> marker
-   >>> import transaction; transaction.commit()
+   <Marker SUCCESS>
 
    >>> IKey(uvcsite).read()
-   "BLAB"
+   '{"k":"...","kty":"oct"}'
+   >>> endInteraction()
 
+   >>> request = startInteraction('')
+   >>> request.form['data']= "login=0101010001&password=passwort" 
+   >>> request.form = {'login': '0101010001', 'password':'passwort'} 
    >>> jwt = getMultiAdapter((uvcsite, request), name='jwt')
    >>> jwt
+   <uvc.jwt.browser.keyring.JWT object at 0...>
+
+   >>> jwt()
+   '{"jwt": "..."}'
+   >>> endInteraction()
+
+   >>> request = startInteraction('')
+   >>> request.form = {'login': '0101010001', 'password':'WRONG'} 
+   >>> jwt = getMultiAdapter((uvcsite, request), name='jwt')
+   >>> jwt
+   <uvc.jwt.browser.keyring.JWT object at 0...>
+
+   >>> jwt()
+   '{"error": "Login failed."}'
+
+   >>> endInteraction()
