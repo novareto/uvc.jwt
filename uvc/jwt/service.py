@@ -81,24 +81,6 @@ class JWTRefresh(Endpoint):
             return json.dumps({'message': 'Token refreshed with success. New expiration date set to %s' % new_date})
         return json.dumps({'error': u'The given token could not be refreshed'})
 
-    def __call__(self):
-        self.update()
-        self.request.response.setHeader('Content-Type', 'application/json')
-        return self.render()
-
-        
-        principal = self.authenticate()
-        if principal is None:
-            return json.dumps({'error': 'Login failed.'})
-
-        key = IKey(self.context).load()        
-        payload = handler.create_payload(**{'userid': principal.id})
-        token = handler.create_encrypted_signed_token(key, payload)
-        self.request.response.setHeader('Access-Control-Allow-Origin', 'http://localhost:8082')
-        return json.dumps({'jwt': token.serialize()})
-
-
-    
 
 class JSONService(Service):
     grok.name('json')
