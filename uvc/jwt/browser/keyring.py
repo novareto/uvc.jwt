@@ -104,7 +104,7 @@ class Refresh(uvcsite.View):
     def refresh(self):
         new_date = expiration_date(minutes=1)
         to_refresh = self.request.form.get('old_token')
-        payload = self.handler.decrypt_and_verify(self.key, to_refresh):
+        payload = self.handler.decrypt_and_verify(self.key, to_refresh)
         return self.vault.refresh(payload['userid'], payload['uid'], new_date)
 
     def render(self):
