@@ -86,6 +86,10 @@ class JWT(uvcsite.View):
         return json.dumps({'jwt': token.serialize()})
 
     def __call__(self):
+        print "I AM IN"
+        import pdb; pdb.set_trace()
         self.update()
         self.request.response.setHeader('Content-Type', 'application/json')
         return self.render()
+
+

@@ -37,7 +37,7 @@ class BearerTokenAuthCredentialsPlugin(grok.GlobalUtility):
         return False
 
 
-class JWTHolder(object):
+class AccessTokenHolder(object):
     grok.implements(IPrincipalInfo)
 
     credentialsPlugin = None
@@ -68,6 +68,7 @@ class AuthenticateBearer(grok.GlobalUtility):
     def verify(self, payload):
         # Here, we need to assert that the expiration time is right.
         # We might do other checks.
+        return True
         return self.jwt.verify_payload(payload) == True
 
     def authenticateCredentials(self, credentials):

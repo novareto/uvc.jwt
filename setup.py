@@ -26,6 +26,7 @@ setup(name='uvc.jwt',
           'grokcore.json',
           'zope.annotation',
           'pytz',
+          'uvc.services',
       ],
       entry_points={
          'z3c.autoinclude.plugin': 'target=uvcsite', 
