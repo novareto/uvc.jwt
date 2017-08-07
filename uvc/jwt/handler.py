@@ -1,20 +1,27 @@
 # -*- coding: utf-8 -*-
 
 import uuid
-from .utils import now, get_posix_timestamp, expiration_date, date_from_timestamp
+from .utils import get_posix_timestamp, expiration_date
 from jwcrypto import jwk, jws, jwt
 from jwcrypto.common import json_encode, json_decode
 
 
 class JWTHandler(object):
 
+    def __init__(self, auto_timeout=None):
+        self.auto_timeout = auto_timeout
+
     def create_payload(self, **ticket):
         tid = uuid.uuid4()
-        exp = get_posix_timestamp(expiration_date(minutes=61))
         payload = {
             'uid': str(tid),
-            'exp': int(exp),
         }
+
+        if self.auto_timeout is not None:
+            exp = get_posix_timestamp(
+                expiration_date(minutes=self.auto_timeout))
+            payload['exp'] = int(exp)
+
         ticket.update(payload)
         return ticket
 
@@ -42,7 +49,7 @@ class JWTHandler(object):
         """
         ET = jwt.JWT(key=key, jwt=serial)
         return ET.claims
-
+    
     def decrypt_and_verify(self, key, serial):
         """Return the claims of a signed and encrypted token
         """

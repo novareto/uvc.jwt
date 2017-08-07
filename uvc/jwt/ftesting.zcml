@@ -1,10 +1,12 @@
 <configure
    xmlns="http://namespaces.zope.org/zope"
+   xmlns:grok="http://namespaces.zope.org/grok"
    i18n_domain="uvc.jwt"
    package="uvc.jwt"
    >
 
   <includeOverrides package="uvcsite" file="ftesting.zcml"/>
+  <grok:grok package="uvcsite.tests.usermanagement" />
   <include package="uvc.jwt" />
 
 </configure>

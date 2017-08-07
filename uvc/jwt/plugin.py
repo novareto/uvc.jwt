@@ -4,7 +4,7 @@ import grok
 import json
 import uvcsite
 import urllib2
-from . import IKey
+from . import IKey, IVault
 from .utils import date_from_timestamp
 from .handler import JWTHandler
 from zope.interface import Interface
@@ -18,9 +18,6 @@ class BearerTokenAuthCredentialsPlugin(grok.GlobalUtility):
     grok.implements(ICredentialsPlugin)
 
     def extractCredentials(self, request):
-        #if not grok.IRESTLayer.providedBy(request):
-        #    return None
-
         if request._auth:
             if request._auth.lower().startswith(u'bearer '):
                 access_token = request._auth.split()[-1]
@@ -47,7 +44,7 @@ class AccessTokenHolder(object):
         return '<AccessTokenHolder "%s">' % self.id
 
     def __init__(self, token):
-        self.id = token['tid']
+        self.id = token['userid']
         self.expiration = date_from_timestamp(float(token['exp']))
         self.title = u'Access token %r' % self.id
         self.description = u'JWT access token'
@@ -58,18 +55,20 @@ class AuthenticateBearer(grok.GlobalUtility):
     grok.implements(IAuthenticatorPlugin)
 
     def __init__(self):
-        self.jwt = JWTHandler()
+        self.jwt = JWTHandler(auto_timeout=1)
 
     @property
     def key(self):
         app = grok.getApplication()
         return IKey(app).load()
 
+    def check_token(self, payload):        
+        app = grok.getApplication()
+        return IVault(app).check_token(payload['userid'], payload['uid'])
+    
     def verify(self, payload):
-        # Here, we need to assert that the expiration time is right.
-        # We might do other checks.
-        return True
-        return self.jwt.verify_payload(payload) == True
+        claims = self.jwt.verify(self.key, payload)
+        return claims == True
 
     def authenticateCredentials(self, credentials):
         """Return principal info if credentials can be authenticated
@@ -88,7 +87,9 @@ class AuthenticateBearer(grok.GlobalUtility):
             payload = json.loads(payload)
 
         if self.verify(payload) == True:
-            return AccessTokenHolder(payload)
+            if self.check_token(payload) == True:
+                return JWTHolder(payload)
+
         return None
 
     def principalInfo(self, id):

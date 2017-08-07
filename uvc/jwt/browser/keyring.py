@@ -14,7 +14,8 @@ from zope.pluggableauth.interfaces import IAuthenticatorPlugin
 from zope.component import getUtility
 
 from ..handler import JWTHandler
-from .. import IKey
+from ..utils import expiration_date
+from .. import IKey, IVault
 
 
 grok.templatedir('templates')
@@ -86,10 +87,33 @@ class JWT(uvcsite.View):
         return json.dumps({'jwt': token.serialize()})
 
     def __call__(self):
-        print "I AM IN"
-        import pdb; pdb.set_trace()
         self.update()
         self.request.response.setHeader('Content-Type', 'application/json')
         return self.render()
 
 
+class Refresh(uvcsite.View):
+    grok.context(uvcsite.IUVCSite)
+    grok.require('zope.Public')
+
+    def update(self):
+        self.vault = IVault(self.context)
+        self.handler = JWTHandler()
+        self.key = IKey(self.context).load()
+        
+    def refresh(self):
+        new_date = expiration_date(minutes=1)
+        to_refresh = self.request.form.get('old_token')
+        payload = self.handler.decrypt_and_verify(self.key, to_refresh):
+        return self.vault.refresh(payload['userid'], payload['uid'], new_date)
+
+    def render(self):
+        new_token = self.refresh()
+        if new_token is not False:
+            return json.dumps({'jwt': token.serialize()})
+        return json.dumps({'error': u'The given token could not be refreshed'})
+
+    def __call__(self):
+        self.update()
+        self.request.response.setHeader('Content-Type', 'application/json')
+        return self.render()
