@@ -18,9 +18,6 @@ class BearerTokenAuthCredentialsPlugin(grok.GlobalUtility):
     grok.implements(ICredentialsPlugin)
 
     def extractCredentials(self, request):
-        #if not grok.IRESTLayer.providedBy(request):
-        #    return None
-
         if request._auth:
             if request._auth.lower().startswith(u'bearer '):
                 access_token = request._auth.split()[-1]
@@ -47,7 +44,7 @@ class JWTHolder(object):
         return '<AccessTokenHolder "%s">' % self.id
 
     def __init__(self, token):
-        self.id = token['tid']
+        self.id = token['userid']
         self.expiration = date_from_timestamp(float(token['exp']))
         self.title = u'Access token %r' % self.id
         self.description = u'JWT access token'
@@ -68,7 +65,8 @@ class AuthenticateBearer(grok.GlobalUtility):
     def verify(self, payload):
         # Here, we need to assert that the expiration time is right.
         # We might do other checks.
-        return self.jwt.verify_payload(payload) == True
+        return True
+        return self.jwt.verify(self.key, payload) == True
 
     def authenticateCredentials(self, credentials):
         """Return principal info if credentials can be authenticated
@@ -85,9 +83,9 @@ class AuthenticateBearer(grok.GlobalUtility):
             return None
         else:
             payload = json.loads(payload)
-
+        print payload
         if self.verify(payload) == True:
-            return AccessTokenHolder(payload)
+            return JWTHolder(payload)
         return None
 
     def principalInfo(self, id):

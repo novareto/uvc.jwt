@@ -10,7 +10,7 @@ class JWTHandler(object):
 
     def create_payload(self, **ticket):
         tid = uuid.uuid4()
-        exp = get_posix_timestamp(expiration_date(minutes=1))
+        exp = get_posix_timestamp(expiration_date(minutes=600))
         payload = {
             'uid': str(tid),
             'exp': int(exp),

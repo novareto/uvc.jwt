@@ -10,7 +10,7 @@ def now(tz=None):
     return datetime.datetime.now(tz)
 
 
-def expiration_date(minutes=1, tz=None):
+def expiration_date(minutes=600, tz=None):
     if tz is None:
         tz = timezone('Europe/Berlin')
     dt = now(tz) + datetime.timedelta(minutes=minutes)
