@@ -45,7 +45,7 @@ class AccessTokenHolder(object):
 
     def __init__(self, token):
         self.id = token['userid']
-        self.expiration = date_from_timestamp(float(token['exp']))
+        #self.expiration = date_from_timestamp(float(token['exp']))
         self.title = u'Access token %r' % self.id
         self.description = u'JWT access token'
 
@@ -67,6 +67,7 @@ class AuthenticateBearer(grok.GlobalUtility):
         return IVault(app).check_token(payload['userid'], payload['uid'])
     
     def verify(self, payload):
+        return True
         claims = self.jwt.verify(self.key, payload)
         return claims == True
 
@@ -88,7 +89,7 @@ class AuthenticateBearer(grok.GlobalUtility):
 
         if self.verify(payload) == True:
             if self.check_token(payload) == True:
-                return JWTHolder(payload)
+                return AccessTokenHolder(payload)
 
         return None
 

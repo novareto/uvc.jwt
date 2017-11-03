@@ -1,7 +1,25 @@
 <configure xmlns="http://namespaces.zope.org/zope"
+           xmlns:browser="http://namespaces.zope.org/browser"
            xmlns:grok="http://namespaces.zope.org/grok">
+
+   <include package="zope.app.publication" file="meta.zcml" />
+
+   <include package="md.rest"/>
+    <!--
+  <publisher
+     name="REST-JSON"
+     factory="uvc.jwt.publication.UVCRESTFactory"
+     methods="HEAD GET DELETE PATCH POST PUT OPTIONS"
+     mimetypes="*"
+     priority="25" />
+-->
   <include package="grok" />
-  <include package="uvc.services" />
   <grok:grok package="." />
+  <publisher
+     name="REST-JSON"
+     factory="uvc.jwt.publication.UVCRESTFactory"
+     methods="HEAD GET DELETE PATCH POST PUT OPTIONS"
+     mimetypes="*"
+     priority="25" />
 </configure>
 
