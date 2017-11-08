@@ -16,7 +16,6 @@ class JWTHandler(object):
         payload = {
             'uid': str(tid),
         }
-
         if self.auto_timeout is not None:
             exp = get_posix_timestamp(
                 expiration_date(minutes=self.auto_timeout))

@@ -21,7 +21,7 @@ class BearerTokenAuthCredentialsPlugin(grok.GlobalUtility):
         if request._auth:
             if request._auth.lower().startswith(u'bearer '):
                 access_token = request._auth.split()[-1]
-            return {'access_token': access_token}
+                return {'access_token': access_token}
         return None
 
     def challenge(self, request):
@@ -34,7 +34,7 @@ class BearerTokenAuthCredentialsPlugin(grok.GlobalUtility):
         return False
 
 
-class AccessTokenHolder(object):
+class JWTHolder(object):
     grok.implements(IPrincipalInfo)
 
     credentialsPlugin = None
@@ -45,7 +45,7 @@ class AccessTokenHolder(object):
 
     def __init__(self, token):
         self.id = token['userid']
-        self.expiration = date_from_timestamp(float(token['exp']))
+        #self.expiration = date_from_timestamp(float(token['exp']))
         self.title = u'Access token %r' % self.id
         self.description = u'JWT access token'
 
@@ -55,7 +55,7 @@ class AuthenticateBearer(grok.GlobalUtility):
     grok.implements(IAuthenticatorPlugin)
 
     def __init__(self):
-        self.jwt = JWTHandler(auto_timeout=1)
+        self.jwt = JWTHandler(auto_timeout=600)
 
     @property
     def key(self):
@@ -65,10 +65,6 @@ class AuthenticateBearer(grok.GlobalUtility):
     def check_token(self, payload):        
         app = grok.getApplication()
         return IVault(app).check_token(payload['userid'], payload['uid'])
-    
-    def verify(self, payload):
-        claims = self.jwt.verify(self.key, payload)
-        return claims == True
 
     def authenticateCredentials(self, credentials):
         """Return principal info if credentials can be authenticated
@@ -85,11 +81,8 @@ class AuthenticateBearer(grok.GlobalUtility):
             return None
         else:
             payload = json.loads(payload)
-
-        if self.verify(payload) == True:
-            if self.check_token(payload) == True:
-                return JWTHolder(payload)
-
+        if self.check_token(payload) == True:
+            return JWTHolder(payload)
         return None
 
     def principalInfo(self, id):

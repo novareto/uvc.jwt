@@ -3,32 +3,54 @@
 import grok
 import json
 import uvcsite
-from .handler import JWTHandler
-from . import IKey, IVault
-from .utils import expiration_date, get_posix_timestamp
-from uvc.services import Service, Endpoint
+
+from uvc.rest.service import Service
+from uvc.rest.components import IRESTNode
+from zope.interface import implementer
 from zope.pluggableauth.interfaces import IAuthenticatorPlugin
 from zope.component import getUtility
 from zope.browser.interfaces import IView
 from zope.publisher.interfaces import IPublishTraverse
 from zope.publisher.interfaces.http import IHTTPPublisher
+from zope.publisher.interfaces.browser import IBrowserPublisher
+
+from .handler import JWTHandler
+from . import IKey, IVault
+from .utils import expiration_date, get_posix_timestamp
+
 
 handler = JWTHandler()
 
 
+@implementer(IBrowserPublisher, IRESTNode)
+class Endpoint(object):
+
+    def __init__(self, request, context):
+        self.context = context
+        self.request = request
+
+    def browserDefault(self, request):
+        return self, None
+
+    def __resolve__(self, request):
+        httpmethod = request.method.upper()
+        method = getattr(self, httpmethod, None)
+        if method is not None:
+            return method
+        raise NotImplementedError(
+            "`%s` method has no bound resolver." % httpmethod)
+
+    def publish(self, request):
+        method = self.__resolve__(request)
+        return method()
+
+
 class JWTAuth(Endpoint):
-        
+
     def authenticate(self):
         principals = getUtility(IAuthenticatorPlugin, name='principals')
         principal = principals.authenticateCredentials(json.loads(self.request.bodyStream.stream.read()))
         return principal
-
-    def OPTIONS(self):
-        self.request.response.setHeader(
-            'Access-Control-Allow-Origin', 'http://localhost:8082')
-        self.request.response.setHeader(
-            'Access-Control-Allow-Headers', 'Content-Type, Access-Control-Allow-Headers, Authorization, X-Requested-With')
-        return ""
 
     def POST(self):
         principal = self.authenticate()
@@ -39,36 +61,24 @@ class JWTAuth(Endpoint):
         vault = IVault(self.context)
         payload = handler.create_payload(**{'userid': principal.id})
         token = handler.create_encrypted_signed_token(key, payload)
-        expire = get_posix_timestamp(expiration_date(minutes=1))
+        expire = get_posix_timestamp(expiration_date(minutes=60))
         vault.store(payload['userid'], payload['uid'], expire)
         self.request.response.setHeader(
-            'Access-Control-Allow-Origin', 'http://localhost:8082')
+                'Access-Control-Allow-Origin', 'http://localhost:8080')
         return json.dumps({'jwt': token.serialize()})
 
 
 class JWTUser(Endpoint):
-    
-    def OPTIONS(self):
-        self.request.response.setHeader(
-            'Access-Control-Allow-Origin', 'http://localhost:8082')
-        self.request.response.setHeader(
-            'Access-Control-Allow-Headers', 'Content-Type, Access-Control-Allow-Headers, Authorization, X-Requested-With')
-        return ""
 
     def GET(self):
+        #self.request.response.setHeader(
+        #    'Access-Control-Allow-Origin', 'http://62.210.125.78:8765')
         self.request.response.setHeader(
-            'Access-Control-Allow-Origin', 'http://localhost:8082')
-        return json.dumps({'user': {'name':'cklinger'}})
+                'Access-Control-Allow-Origin', 'http://localhost:8080')
+        return json.dumps({'data': {'name':'cklinger', 'pid': '0101010001'}})
 
 
 class JWTRefresh(Endpoint):
-    
-    def OPTIONS(self):
-        self.request.response.setHeader(
-            'Access-Control-Allow-Origin', 'http://localhost:8082')
-        self.request.response.setHeader(
-            'Access-Control-Allow-Headers', 'Content-Type, Access-Control-Allow-Headers, Authorization, X-Requested-With')
-        return ""
 
     def POST(self):
         vault = IVault(self.context)
@@ -87,6 +97,7 @@ class JSONService(Service):
 
     endpoints = {
         'login': JWTAuth,
+        'auth': JWTAuth,
         'user': JWTUser,
         'refresh': JWTRefresh,
         }

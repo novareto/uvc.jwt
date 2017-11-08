@@ -10,7 +10,7 @@ from jwcrypto import jwk
 from jwcrypto.common import json_decode
 from BTrees.OIBTree import OIBTree
 from BTrees.OOBTree import OOBTree
-from .utils import date_from_timestamp
+from .utils import date_from_timestamp, now
 
 logger = logging.getLogger('uvcsite.uvc.jwt')
 
@@ -111,5 +111,5 @@ class ApplicationJWTVault(grok.Adapter):
             vault = users.get(user, None)
             if vault is not None and token_id in vault:
                  exp = date_from_timestamp(float(vault[token_id]))
-                 return exp >= datetime.now()
+                 return exp >= now()
         return None
