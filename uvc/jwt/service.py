@@ -64,7 +64,7 @@ class JWTAuth(Endpoint):
         expire = get_posix_timestamp(expiration_date(minutes=60))
         vault.store(payload['userid'], payload['uid'], expire)
         self.request.response.setHeader(
-                'Access-Control-Allow-Origin', 'http://localhost:8080')
+                'Access-Control-Allow-Origin', 'http://localhost:8082')
         return json.dumps({'jwt': token.serialize()})
 
 
@@ -74,18 +74,24 @@ class JWTUser(Endpoint):
         #self.request.response.setHeader(
         #    'Access-Control-Allow-Origin', 'http://62.210.125.78:8765')
         self.request.response.setHeader(
-                'Access-Control-Allow-Origin', 'http://localhost:8080')
+                'Access-Control-Allow-Origin', 'http://localhost:8082')
         return json.dumps({'data': {'name':'cklinger', 'pid': '0101010001'}})
 
 
 class JWTRefresh(Endpoint):
 
     def POST(self):
+        self.request.response.setHeader(
+                'Access-Control-Allow-Origin', 'http://localhost:8082')
         vault = IVault(self.context)
         key = IKey(self.context).load()
     
         new_date = expiration_date(minutes=1)
-        to_refresh = json.loads(self.request.bodyStream.stream.read())['old_token']
+        #try:
+        #    to_refresh = json.loads(self.request.bodyStream.stream.read())['old_token']
+        #except:
+        to_refresh = self.request._auth[7:]
+        #import pdb; pdb.set_trace() 
         payload = json.loads(handler.decrypt_and_verify(key, to_refresh))
         if vault.refresh(payload['userid'], payload['uid'], get_posix_timestamp(new_date)) is True:
             return json.dumps({'message': 'Token refreshed with success. New expiration date set to %s' % new_date})
@@ -105,5 +111,6 @@ class JSONService(Service):
     def publishTraverse(self, request, name):
         endpoint = self.endpoints.get(name, None)
         if endpoint is not None:
+            import pdb; pdb.set_trace() 
             return endpoint(self.request, self.context)
             
