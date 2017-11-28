@@ -48,13 +48,16 @@ class Endpoint(object):
 class JWTAuth(Endpoint):
 
     def authenticate(self):
+        self.request.response.setHeader('Access-Control-Allow-Origin', '*')
         principals = getUtility(IAuthenticatorPlugin, name='principals')
-        principal = principals.authenticateCredentials(json.loads(self.request.bodyStream.stream.read()))
+        principal = principals.authenticateCredentials(
+            json.loads(self.request.bodyStream.stream.read()))
         return principal
 
     def POST(self):
         principal = self.authenticate()
         if principal is None:
+            self.request.response.setStatus(403, "Login failed")
             return json.dumps({'error': 'Login failed.'})
 
         key = IKey(self.context).load()
@@ -63,7 +66,6 @@ class JWTAuth(Endpoint):
         token = handler.create_encrypted_signed_token(key, payload)
         expire = get_posix_timestamp(expiration_date(minutes=60))
         vault.store(payload['userid'], payload['uid'], expire)
-        self.request.response.setHeader('Access-Control-Allow-Origin', '*')
         return json.dumps({'jwt': token.serialize()})
 
 
@@ -80,16 +82,29 @@ class JWTRefresh(Endpoint):
         self.request.response.setHeader('Access-Control-Allow-Origin', '*')
         vault = IVault(self.context)
         key = IKey(self.context).load()
-    
         new_date = expiration_date(minutes=1)
-        #try:
-        #    to_refresh = json.loads(self.request.bodyStream.stream.read())['old_token']
-        #except:
-        to_refresh = self.request._auth[7:]
-        payload = json.loads(handler.decrypt_and_verify(key, to_refresh))
-        if vault.refresh(payload['userid'], payload['uid'], get_posix_timestamp(new_date)) is True:
-            return json.dumps({'message': 'Token refreshed with success. New expiration date set to %s' % new_date})
-        return json.dumps({'error': u'The given token could not be refreshed'})
+        try:
+            to_refresh = self.request._auth[7:]
+            data = json.loads(handler.decrypt_and_verify(key, to_refresh))
+            new_ts = get_posix_timestamp(new_date)
+            if vault.refresh(data['userid'], data['uid'], new_ts) is True:
+                return json.dumps({
+                    'message': ('Token refreshed with success. '
+                                'New expiration date set to %s') % new_date})
+            return json.dumps(
+                {'error': u'The given token could not be refreshed'})
+        except Exception as e:
+            # be more specific
+            return json.dumps(
+                {'error': u'An error occured'})
+
+
+
+class JWTLogout(Endpoint):
+
+    def POST(self):
+        self.request.response.setHeader('Access-Control-Allow-Origin', '*')
+        return json.dumps({'status': 'success', 'message': 'Logout'})
 
 
 class JSONService(Service):
@@ -97,6 +112,7 @@ class JSONService(Service):
 
     endpoints = {
         'login': JWTAuth,
+        'logout': JWTLogout,
         'auth': JWTAuth,
         'user': JWTUser,
         'refresh': JWTRefresh,
